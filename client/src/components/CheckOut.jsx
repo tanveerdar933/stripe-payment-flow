@@ -1,5 +1,5 @@
 import React from 'react';
-import axios from "./axios";
+import axios from "../axios";
 
 const CheckOut = () => {
   // const handleCheckout = async (item_id, item_quantity) => {

@@ -1,54 +1,86 @@
 const express = require('express');
 const cors = require("cors");
 const app = express();
-const { STRIPE_PRIVATE_KEY, PORT, CLIENT_APP_URL } = require('./env_exports');
-const stripe = require('stripe')(STRIPE_PRIVATE_KEY);
-let corsOptions = {
-  origin: "*", //http://localhost:8081"
-};
-app.use(cors(corsOptions));
+const { PORT, CORS_OPTIONS } = require('./env_exports');
+const appRouter = require("./router")("app");
+
+app.use(cors(CORS_OPTIONS));
 app.use(express.json());
 
-const storeItems = new Map([
-  [1, { priceInCents: 10000, name: 'Learn React Today' }],
-  [2, { priceInCents: 20000, name: 'Learn CSS Today' }],
-]);
+app.use('/api', appRouter);
 
-app.get('/api/test', (req, res) => {
-  res.send('Server is running!');
-});
-
-app.post('/api/checkout', async (req, res) => {
-  try {
-    const item = req.body;
-    const storeItem = storeItems.get(item.id);
-    const lineItems = [
-      {
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: storeItem.name,
-          },
-          unit_amount: storeItem.priceInCents,
-        },
-        quantity: item.quantity,
+app.post(
+  '/webhook',
+  express.raw({ type: 'application/json' }),
+  (request, response) => {
+    let event = request.body;
+    // Replace this endpoint secret with your endpoint's unique secret
+    // If you are testing with the CLI, find the secret by running 'stripe listen'
+    // If you are using an endpoint defined with the API or dashboard, look in your webhook settings
+    // at https://dashboard.stripe.com/webhooks
+    const endpointSecret = 'whsec_12345';
+    // Only verify the event if you have an endpoint secret defined.
+    // Otherwise use the basic event deserialized with JSON.parse
+    if (endpointSecret) {
+      // Get the signature sent by Stripe
+      const signature = request.headers['stripe-signature'];
+      try {
+        event = stripe.webhooks.constructEvent(
+          request.body,
+          signature,
+          endpointSecret
+        );
+      } catch (err) {
+        console.log(`⚠️  Webhook signature verification failed.`, err.message);
+        return response.sendStatus(400);
       }
-    ];
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: lineItems,
-      mode: 'payment',
-      success_url: `${CLIENT_APP_URL}/success`,
-      cancel_url: `${CLIENT_APP_URL}/cancel`,
-    });
-
-    res.json({ url: session.url });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    }
+    let subscription;
+    let status;
+    // Handle the event
+    switch (event.type) {
+      case 'customer.subscription.trial_will_end':
+        subscription = event.data.object;
+        status = subscription.status;
+        console.log(`Subscription status is ${status}.`);
+        // Then define and call a method to handle the subscription trial ending.
+        // handleSubscriptionTrialEnding(subscription);
+        break;
+      case 'customer.subscription.deleted':
+        subscription = event.data.object;
+        status = subscription.status;
+        console.log(`Subscription status is ${status}.`);
+        // Then define and call a method to handle the subscription deleted.
+        // handleSubscriptionDeleted(subscriptionDeleted);
+        break;
+      case 'customer.subscription.created':
+        subscription = event.data.object;
+        status = subscription.status;
+        console.log(`Subscription status is ${status}.`);
+        // Then define and call a method to handle the subscription created.
+        // handleSubscriptionCreated(subscription);
+        break;
+      case 'customer.subscription.updated':
+        subscription = event.data.object;
+        status = subscription.status;
+        console.log(`Subscription status is ${status}.`);
+        // Then define and call a method to handle the subscription update.
+        // handleSubscriptionUpdated(subscription);
+        break;
+      case 'entitlements.active_entitlement_summary.updated':
+        subscription = event.data.object;
+        console.log(`Active entitlement summary updated for ${subscription}.`);
+        // Then define and call a method to handle active entitlement summary updated
+        // handleEntitlementUpdated(subscription);
+        break;
+      default:
+        // Unexpected event type
+        console.log(`Unhandled event type ${event.type}.`);
+    }
+    // Return a 200 response to acknowledge receipt of the event
+    response.send();
   }
-});
+);
 
 app.listen(PORT, () => {
   console.log(`Example app listening at http://localhost:${PORT}`);
