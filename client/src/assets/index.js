@@ -1,0 +1,1 @@
+export { default as COURSE_COVER } from "./cover.jpg";

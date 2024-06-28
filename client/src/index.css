@@ -1,0 +1,41 @@
+.product-card {
+  display: flex;
+  gap: 20px;
+  border: 0.5px solid #ccc;
+  width: max-content;
+  padding: 15px;
+  box-shadow: #ccc 0px 0px 10px;
+  border-radius: 10px;
+}
+
+.seats-input{
+  padding: 10px 0;
+}
+
+.success-btn {
+  border: none;
+  background-color: #4CAF50;
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.success-notice {
+  background-color: #4CAF50;
+  color: #ffffff;
+  padding: 10px;
+  font-size: 1.2rem;
+  width: max-content;
+  margin: 20px 10px;
+}
+
+.error-notice {
+  background-color: #f44336;
+  color: #ffffff;
+  padding: 10px;
+  font-size: 1.2rem;
+  width: max-content;
+  margin: 20px 10px;
+}

@@ -16,8 +16,8 @@ const SuccessDisplay = ({ sessionId }) => {
           name="session_id"
           value={sessionId}
         />
-        <button id="checkout-and-portal-button" type="submit">
-          Manage your billing information
+        <button type="submit">
+          Manage Subscription
         </button>
       </form>
     </section>

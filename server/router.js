@@ -40,12 +40,13 @@ module.exports = app => {
   router.post("/subscribe", async (req, res) => {
     try {
       const lookup_key = req.body.lookup_key;
-      console.log("lookup_key===>", lookup_key);
+      const quantity = req.body.quantity;
+      // console.log("lookup_key===>", lookup_key);
 
       // const allProducts = await stripe.products.list();
       // console.log("Products List===>", allProducts);
       const prices = await stripe.prices.list({
-        // lookup_keys: [{product}],
+        lookup_keys: [lookup_key],
         expand: ['data.product'],
       });
 
@@ -53,10 +54,10 @@ module.exports = app => {
       //   email: user.email,
       //   limit: 1,
       // });
-      let stripeCustomers = await stripe.customers.list({
-        email: "test_payment21@gmail.com",
-        limit: 1,
-      });
+      // let stripeCustomers = await stripe.customers.list({
+      //   email: "test_payment21@gmail.com",
+      //   limit: 1,
+      // });
       // stripeCustomers = await stripe.customers.create({
       //   email: "test_payment21@gmail.com",
       //   name: "test_payment21",
@@ -66,12 +67,13 @@ module.exports = app => {
       //     default_payment_method: 'pm_card_visa',
       //   },
       // });
-      console.log("stripeCustomer===>", stripeCustomers);
+      // console.log("stripeCustomer===>", stripeCustomers);
 
-      console.log("prices===>", prices);
+      // console.log("prices===>", prices);
       const session = await stripe.checkout.sessions.create({
         billing_address_collection: 'auto',
         // payment_method_types: ['card'],
+        // default_payment_method: 'pm_card_visa',
         line_items: [
           {
             // price_data: {
@@ -82,17 +84,14 @@ module.exports = app => {
             //   unit_amount: price,
             // },
             price: prices.data[0].id,
-            quantity: 1,
+            quantity: quantity,
           },
         ],
         mode: 'subscription',
-        // success_url: `${CLIENT_APP_URL}/success?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        success_url: "",
-        // cancel_url: `${CLIENT_APP_URL}/cancel?canceled=true`,
+        success_url: `${CLIENT_APP_URL}/?success=true&session_id={CHECKOUT_SESSION_ID}&email={CHECKOUT_SESSION_CUSTOMER_EMAIL}`,
+        // success_url: "",
+        cancel_url: `${CLIENT_APP_URL}/?canceled=true`,
       });
-      console.log("session===>", session);
-
-      //can we check if it was successful or not
 
       res.json({ url: session.url });
     } catch (error) {
@@ -101,15 +100,25 @@ module.exports = app => {
     }
   });
   router.post("/portal", async (req, res) => {
-    const { session_id } = req.body;
+    const { user_email } = req.body;
     try {
-      const checkoutSession = await stripe.checkout.sessions.retrieve(session_id);
+      const stripCustomer = await stripe.customers.list({
+        email: user_email,
+      });
+      console.log("stripCustomer===>", stripCustomer);
       // This is the url to which the customer will be redirected when they are done
       // managing their billing with the portal.
       const portalSession = await stripe.billingPortal.sessions.create({
-        customer: checkoutSession.customer,
+        customer: stripCustomer.data[0].id,
+        // line_items: [
+        //   {
+        //     price: "price_1JQ2m6JZ8dJ7JZ7h5yYz4j3A",
+        //     quantity: 1,
+        //   },
+        // ],
         return_url: CLIENT_APP_URL,
       });
+      // console.log("portalSession===>", portalSession);
       res.json({ url: portalSession.url });
     } catch (error) {
       console.error(error);
