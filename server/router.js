@@ -71,8 +71,8 @@ module.exports = app => {
 
       // console.log("prices===>", prices);
       const session = await stripe.checkout.sessions.create({
-        billing_address_collection: 'auto',
-        // payment_method_types: ['card'],
+        billing_address_collection: "auto",
+        payment_method_types: ['card'],
         // default_payment_method: 'pm_card_visa',
         line_items: [
           {
@@ -88,7 +88,7 @@ module.exports = app => {
           },
         ],
         mode: 'subscription',
-        success_url: `${CLIENT_APP_URL}/?success=true&session_id={CHECKOUT_SESSION_ID}&email={CHECKOUT_SESSION_CUSTOMER_EMAIL}`,
+        success_url: `${CLIENT_APP_URL}/?success=true&session_id={CHECKOUT_SESSION_ID}`,
         // success_url: "",
         cancel_url: `${CLIENT_APP_URL}/?canceled=true`,
       });
@@ -99,27 +99,49 @@ module.exports = app => {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   });
+  router.post("/configure", async (req, res) => {
+    // const { user_email } = req.body;
+    try {
+      // const configuration = await stripe.billingPortal.configurations.create({
+      //   business_profile: {
+      //     headline: 'Cactus Practice partners with Stripe for simplified billing.',
+      //   },
+      //   features: {
+      //     invoice_history: {
+      //       enabled: true,
+      //     },
+      //   },
+      // });
+      const configuration = await stripe.billingPortal.configurations.list();
+      console.log("configuration===>", configuration);
+      res.json({ url: configuration.url });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
   router.post("/portal", async (req, res) => {
     const { user_email } = req.body;
     try {
       const stripCustomer = await stripe.customers.list({
-        email: user_email,
+        email: "test_customer@gmail.com",
       });
-      console.log("stripCustomer===>", stripCustomer);
+
       // This is the url to which the customer will be redirected when they are done
       // managing their billing with the portal.
-      const portalSession = await stripe.billingPortal.sessions.create({
-        customer: stripCustomer.data[0].id,
-        // line_items: [
-        //   {
-        //     price: "price_1JQ2m6JZ8dJ7JZ7h5yYz4j3A",
-        //     quantity: 1,
-        //   },
-        // ],
-        return_url: CLIENT_APP_URL,
-      });
+      // const portalSession = await stripe.billingPortal.sessions.create({
+      //   customer: stripCustomer.data[0].id,
+      //   // line_items: [
+      //   //   {
+      //   //     price: "price_1JQ2m6JZ8dJ7JZ7h5yYz4j3A",
+      //   //     quantity: 1,
+      //   //   },
+      //   // ],
+      //   return_url: CLIENT_APP_URL,
+      // });
       // console.log("portalSession===>", portalSession);
-      res.json({ url: portalSession.url });
+      // res.json({ url: portalSession.url });
+      // res.json({ url: "" });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Internal Server Error' });

@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { COURSE_COVER } from "../assets";
 import { TailSpin } from 'react-loader-spinner'
+import { useNavigate } from 'react-router-dom';
 import axios from "../axios";
 
 const ProductDisplay = () => {
+  const navigate = useNavigate();
+
   const [isLoading, setIsLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [pricePerSeat, setPricePerSeat] = useState(12);
@@ -12,11 +15,20 @@ const ProductDisplay = () => {
   const [isError, setIsError] = useState(false);
   const [showError, setShowError] = useState(false);
   const [sessionId, setSessionId] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+
+  //billing portal states
+
+  const [portalID, setPortalID] = useState('');
+  const [portalURL, setPortalURL] = useState('');
+
+
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
     const check_if_success = query.get('success');
     const check_if_canceled = query.get('canceled');
     const session_id = query.get('session_id');
+    const email = query.get('email');
     if (check_if_success) {
       setIsSuccess(true);
     }
@@ -26,7 +38,10 @@ const ProductDisplay = () => {
     if (session_id) {
       setSessionId(session_id);
     }
-    if (check_if_success || check_if_canceled || session_id) {
+    if (email) {
+      setCustomerEmail(email)
+    }
+    if (check_if_success || check_if_canceled || session_id || email) {
       window.history.replaceState(null, null, window.location.pathname);
     }
   }, [])
@@ -75,7 +90,7 @@ const ProductDisplay = () => {
     setIsLoading(true);
     try {
       const response = await axios.post("/portal", {
-        session_id: sessionId
+        user_email: customerEmail,
       })
       if (response.data.url) {
         window.location.href = response.data.url;
@@ -85,6 +100,20 @@ const ProductDisplay = () => {
     catch (error) {
       console.error("error===>", error)
       setIsLoading(false);
+    }
+  }
+
+  const handleConfigure = async () => {
+    try {
+      const response = await axios.post("/configure", {
+        portal_id: portalID,
+      })
+      if (response.data.url) {
+        setPortalURL(response.data.url);
+      }
+    }
+    catch (error) {
+      console.error("error===>", error)
     }
   }
 
@@ -135,6 +164,16 @@ const ProductDisplay = () => {
           Subscription could not be completed!
         </div>
       }
+      <div>
+        <h2>Billing Portal configration</h2>
+        <input type="text" value={portalID} onChange={(e) => setPortalID(e.target.value)} />
+        <button onClick={handleConfigure}>Configure</button>
+      </div>
+      <div>
+        <h2>Billing Portal URL</h2>
+        <p>url: {portalURL}</p>
+        <button onClick={() => window.open(portalURL, "_blank")}>Open Portal</button>
+      </div>
     </section>
   )
 }
